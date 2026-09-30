@@ -1,66 +1,84 @@
-from utils import print_title
-
-from data_loader import load_dataset
-from data_loader import dataset_summary
+import streamlit as st
+import pandas as pd
 
 from data_cleaner import clean_dataset
-from data_cleaner import save_clean_dataset
-
-from analytics_engine import dashboard
-from analytics_engine import top_sales
-
+from analytics_engine import dashboard, top_sales
 from visualization import sales_by_region
-from visualization import monthly_sales
-from visualization import profit_distribution
-from visualization import interactive_sales
 
-from sql_manager import save_to_database
-from sql_manager import read_database
 
-def start():
+st.set_page_config(
+    page_title="AI Business Intelligence Platform",
+    page_icon="📊",
+    layout="wide"
+)
 
-    print_title("AI BUSINESS INTELLIGENCE PLATFORM")
+st.title("📊 AI BUSINESS INTELLIGENCE PLATFORM")
+st.subheader("Business Intelligence Dashboard")
 
-    # Load Dataset
-    df = load_dataset("sales.csv")
+st.write(
+    "Upload your sales dataset to clean, analyze and visualize your business data."
+)
 
-    if df is None:
-        return
+uploaded_file = st.file_uploader(
+    "Upload CSV file",
+    type=["csv"]
+)
 
-    # Dataset Summary
-    dataset_summary(df)
+if uploaded_file is not None:
 
-    # Clean Dataset
+    df = pd.read_csv(uploaded_file)
+
+    st.success("Dataset uploaded successfully!")
+
+    st.subheader("Dataset Preview")
+    st.dataframe(df.head())
+
+    # Clean data
     df = clean_dataset(df)
 
-    # Save Clean CSV
-    save_clean_dataset(df)
+    st.subheader("Cleaned Dataset")
+    st.dataframe(df.head())
 
-    # Save SQL
-    save_to_database(df)
+    # KPIs
+    st.subheader("📈 Business KPIs")
 
-    # Read SQL
-    sql_df = read_database()
+    col1, col2, col3, col4 = st.columns(4)
 
-    print("\n========== BUSINESS KPIs ==========\n")
+    col1.metric("Total Sales", f"₹{df['sales'].sum():,.2f}")
 
-    summary = dashboard(sql_df)
+    if "profit" in df.columns:
+        col2.metric("Total Profit", f"₹{df['profit'].sum():,.2f}")
 
-    for key, value in summary.items():
-        print(f"{key:<25}: {value}")
+    if "orders" in df.columns:
+        col3.metric("Total Orders", f"{df['orders'].sum():,.0f}")
 
-    print("\n========== TOP 5 SALES ==========\n")
+    col4.metric("Rows", f"{len(df):,}")
 
-    print(top_sales(sql_df))
-    
-    print("\nGenerating Charts...\n")
+    # Sales by region
+    if "region" in df.columns and "sales" in df.columns:
 
-    sales_by_region(sql_df)
+        st.subheader("🌍 Sales by Region")
 
-    monthly_sales(sql_df)
+        region_sales = df.groupby("region")["sales"].sum()
 
-    profit_distribution(sql_df)
+        st.bar_chart(region_sales)
 
-    interactive_sales(sql_df)
+    # Monthly sales
+    if "month" in df.columns and "sales" in df.columns:
 
-    print("\nCharts Generated Successfully.")
+        st.subheader("📅 Monthly Sales")
+
+        monthly = df.groupby("month")["sales"].sum()
+
+        st.line_chart(monthly)
+
+    st.subheader("🔝 Top Sales")
+
+    if "sales" in df.columns:
+        st.dataframe(
+            df.sort_values("sales", ascending=False).head(5)
+        )
+
+else:
+
+    st.info("👆 Please upload a CSV file to get started.")
