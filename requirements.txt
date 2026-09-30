@@ -1,0 +1,10 @@
+pandas
+numpy
+matplotlib
+plotly
+streamlit
+openpyxl
+scikit-learn
+reportlab
+openai
+python-dotenv
